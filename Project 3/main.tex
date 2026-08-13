@@ -1,0 +1,235 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[greek,english]{babel}
+\usepackage{alphabeta}
+\usepackage{geometry}
+\geometry{left=2cm, right=2cm, top=2cm, bottom=2cm}
+\usepackage{amssymb} % for checkboxes
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\title{\vspace{-2cm}Συμμόρφωση Επιχειρησιακής Διαδικασίας Ακτινοδιαγνωστικού Τμήματος Νοσοκομείου με τον Κανονισμό NIS 2\\[1ex] \large Google Cybersecurity Seminars}
+\author{Ζωίδης Βασίλειος}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{1. ΠΟΛΙΤΙΚΗ ΕΛΕΓΧΟΥ ΠΡΟΣΒΑΣΗΣ \& ΡΟΛΩΝ (ACCESS CONTROL POLICY)}
+\textbf{Έκδοση:} 1.1\\
+\textbf{Ημερομηνία:} 12 Αυγούστου 2026
+
+\subsection*{1. Σκοπός}
+Η παρούσα πολιτική ορίζει τις αρχές και διαδικασίες για τη διαχείριση της πρόσβασης στα πληροφοριακά συστήματα του οργανισμού, σύμφωνα με τις απαιτήσεις της NIS 2, με στόχο την προστασία των ευαίσθητων προσωπικών δεδομένων υγείας (π.χ. ιατρικές γνωματεύσεις) και τη διασφάλιση της ομαλής λειτουργίας του Ακτινοδιαγνωστικού Τμήματος.
+
+\subsection*{2. Πεδίο Εφαρμογής}
+Εφαρμόζεται σε:
+\begin{itemize}
+    \item \textbf{Χρήστες:} Ιατρούς (Internal / External Physicians), ακτινολόγους και τεχνικούς ακτινολογικού (Radiologists \& Radiology Technicians), διοικητικό προσωπικό (Administrative Clerks)και προμηθευτές (MRI Scanner Vendor).
+    \item \textbf{Συστήματα / Εφαρμογές:} Σύστημα Πληροφοριών Ακτινολογικού - RIS, Σύστημα Αρχειοθέτησης και Επικοινωνίας Εικόνων - PACS, MRI Workstation, Web services (ΗΔΙΚΑ / ΕΟΠΥΥ).
+    \item \textbf{Υποδομές / Δίκτυα:} Τοπικό δίκτυο νοσοκομείου, ασφαλή κανάλια απομακρυσμένης πρόσβασης (VPN).
+\end{itemize}
+
+\subsection*{3. Αρχές Ελέγχου Πρόσβασης}
+\begin{itemize}
+    \item \textbf{Ελάχιστο απαιτούμενο δικαίωμα (Least Privilege):} Κάθε χρήστης αποκτά πρόσβαση μόνο στα δεδομένα που είναι απολύτως απαραίτητα για την εκτέλεση των καθηκόντων του.
+    \item \textbf{MFA για ευαίσθητα συστήματα:} $\blacksquare$ Ναι \quad $\square$ Όχι\\
+    Απαιτείται Έλεγχος Ταυτότητας Πολλαπλών Παραγόντων (MFA) για κάθε απομακρυσμένη πρόσβαση (π.χ. External Physicians) και υποχρεωτικά για τους διαχειριστές (Admins) στα RIS/PACS. Επίσης, προβλέπεται τακτική εκπαίδευση των χρηστών για την αποτροπή υποκλοπής κωδικών.
+\end{itemize}
+
+\subsection*{4. Διαδικασία Δημιουργίας / Τροποποίησης / Απενεργοποίησης Λογαριασμών}
+\begin{itemize}
+    \item \textbf{Αίτηση πρόσβασης:} Υποβάλλεται ηλεκτρονικά από τον Προϊστάμενο του Τμήματος.
+    \item \textbf{Έγκριση από:} Τον Υπεύθυνο Ασφαλείας (ΥΑΣΠΕ) και τη Διεύθυνση Πληροφορικής.
+    \item \textbf{Χρόνος απενεργοποίησης μετά από αποχώρηση:} Εντός 24 ωρών από την αποχώρηση.
+    \item \textbf{Ετήσια αναθεώρηση ρόλων:} $\blacksquare$ Ναι \quad $\square$ Όχι -- \textbf{Συχνότητα:} Κάθε 12 μήνες.
+\end{itemize}
+
+\subsection*{5. Έλεγχος Πρόσβασης σε Δεδομένα}
+\begin{itemize}
+    \item \textbf{Επίπεδα πρόσβασης (RBAC):}
+    \begin{itemize}
+        \item \textit{Role\_Admin}: Πλήρης πρόσβαση (ΙΤ).
+        \item \textit{Role\_Clinical\_Doctor}: Ανάγνωση/Επεξεργασία γνωματεύσεων και εικόνων DICOM.
+        \item \textit{Role\_Technician}: Δημιουργία και αποστολή εικόνων από το MRI στο PACS.
+        \item \textit{Role\_Clerk}: Διαχείριση ραντεβού (registration) και έκδοση CD.
+    \end{itemize}
+    \item \textbf{Διαδικασία έγκρισης πρόσβασης σε ευαίσθητα δεδομένα:} Αυτόματη μέσω Συστήματος Ελέγχου Πρόσβασης βάσει Ρόλων (RBAC). Συμπληρωματικά εφαρμόζεται και Φυσικός Έλεγχος Πρόσβασης (κάρτες RFID) στους χώρους των MRI/Servers.
+\end{itemize}
+
+\subsection*{6. Καταγραφή \& Παρακολούθηση}
+\begin{itemize}
+    \item \textbf{Τι καταγράφεται (logs):} Επιτυχείς και αποτυχημένες προσπάθειες σύνδεσης, τροποποιήσεις αρχείων DICOM, πρόσβαση σε φακέλους, εξαγωγή δεδομένων (CD creation).
+    \item \textbf{Χρόνος διατήρησης:} 2 έτη, σύμφωνα με τις κανονιστικές απαιτήσεις.
+\end{itemize}
+
+\subsection*{7. Εξαιρέσεις / Ειδικές Περιπτώσεις}
+Η πολιτική ελέγχου μπορεί να μην εφαρμόζεται σε διαδικασίες έκτακτης ιατρικής ανάγκης ``Break-Glass'' όπου η άμεση πρόσβαση στο RIS/PACS είναι κρίσιμη για τη ζωή του ασθενούς (τα logs ωστόσο διατηρούνται και ελέγχονται αυστηρά εκ των υστέρων).
+
+\vspace{1cm}
+\hrule
+\vspace{1cm}
+
+\section*{2. ΠΟΛΙΤΙΚΗ ΔΙΑΧΕΙΡΙΣΗΣ ΕΝΗΜΕΡΩΣΕΩΝ (PATCH MANAGEMENT)}
+\textbf{Έκδοση:} 1.1\\
+\textbf{Ημερομηνία:} 12 Αυγούστου 2026
+
+\subsection*{1. Σκοπός}
+Η παρούσα πολιτική εξασφαλίζει ότι όλα τα συστήματα (servers, endpoints, δικτυακές συσκευές κ.λ.π.) ενημερώνονται εγκαίρως για την αντιμετώπιση ευπαθειών, διασφαλίζοντας τη συνεχή και απρόσκοπτη λειτουργία των κρίσιμων ιατρικών συστημάτων.
+
+\subsection*{2. Πεδίο Εφαρμογής}
+\begin{itemize}
+    \item \textbf{Servers:} RIS Server, PACS Server, συστήματα Remote Backup.
+    \item \textbf{Υπολογιστές:} MRI Workstation, τερματικά ιατρών και διοικητικού προσωπικού.
+    \item \textbf{Εξοπλισμός δικτύου:} Routers, Firewalls, VPN Appliances (Site-to-Site VPN).
+\end{itemize}
+
+\subsection*{3. Συχνότητα Ενημερώσεων}
+\begin{itemize}
+    \item \textbf{Κρίσιμες ενημερώσεις:} Εντός 48 ωρών από τη διάθεσή τους.
+    \item \textbf{Ασφαλείας:} $\square$ Εβδομαδιαία \quad $\blacksquare$ Μηνιαία \quad $\square$ Άλλη:
+    \item \textbf{Λειτουργικού συστήματος:} Μηνιαία (κατά τα προκαθορισμένα maintenance windows).
+    \item \textbf{Εφαρμογών:} Κατόπιν συνεννόησης και πιστοποίησης από τον κατασκευαστή (MRI Scanner Vendor Services).
+\end{itemize}
+
+\subsection*{4. Διαδικασία Εντοπισμού Ευπαθειών}
+\begin{itemize}
+    \item \textbf{Εργαλεία που χρησιμοποιούνται:} Αυτοματοποιημένα Vulnerability Scanners στο τοπικό δίκτυο.
+    \item \textbf{Πηγή ενημερώσεων:} Επίσημα κανάλια κατασκευαστών, CERTs, National Vulnerability Database.
+\end{itemize}
+
+\subsection*{5. Διαδικασία Εφαρμογής}
+\begin{itemize}
+    \item \textbf{Έλεγχος συμβατότητας:} Αυστηρός έλεγχος για το εάν το patch επηρεάζει την πιστοποίηση (CE/FDA) του ιατρικού λογισμικού (MRI/PACS).
+    \item \textbf{Δοκιμή σε περιβάλλον staging:} Υποχρεωτική για όλους τους RIS/PACS servers πριν την παραγωγή, περιλαμβάνοντας την επαλήθευση της ορθής επικοινωνίας DICOM μεταξύ MRI και PACS.
+    \item \textbf{Εγκατάσταση:} Σε ώρες χαμηλής κίνησης (off-hours) με προειδοποίηση του Τμήματος.
+    \item \textbf{Τεκμηρίωση:} Καταγραφή στο σύστημα Change Management.
+    \item \textbf{Rollback plan:} Λήψη VM snapshot και Database backup πριν από κάθε εγκατάσταση ενημέρωσης.
+    \item \textbf{Λεπτομέρειες:} Ενημέρωση των MRI Scanners μόνο από πιστοποιημένους τεχνικούς του Vendor.
+\end{itemize}
+
+\subsection*{6. Καταγραφή}
+\textbf{Σημειώνονται όλα τα patches στο:} $\square$ Έγγραφο \quad $\square$ Excel \quad $\blacksquare$ Άλλο: Κεντρικό Σύστημα ITSM (IT Service Management) του Νοσοκομείου.
+
+\vspace{1cm}
+\hrule
+\vspace{1cm}
+
+\section*{3. ΠΟΛΙΤΙΚΗ ΓΙΑ DATA-AT-REST ΑΣΦΑΛΕΙΑ (ΕΜΠΙΣΤΕΥΤΙΚΟΤΗΤΑ, ΑΚΕΡΑΙΟΤΗΤΑ, ΔΙΑΘΕΣΙΜΟΤΗΤΑ)}
+\textbf{Έκδοση:} 1.1\\
+\textbf{Ημερομηνία:} 12 Αυγούστου 2026
+
+\subsection*{1. Σκοπός}
+Προστασία δεδομένων που αποθηκεύονται σε servers, βάσεις δεδομένων, endpoints, φορητά μέσα και cloud, για την αποτροπή μη εξουσιοδοτημένης πρόσβασης, παραποίησης ή απώλειας κρίσιμων ιατρικών δεδομένων (DICOM, e-prescriptions).
+
+\subsection*{2. Πεδίο Εφαρμογής}
+\begin{itemize}
+    \item \textbf{Συστήματα:} Υποδομές αποθήκευσης PACS.
+    \item \textbf{Βάσεις δεδομένων:} Βάση δεδομένων RIS.
+    \item \textbf{Αρχεία / Backups:} Τοπικά αντίγραφα ασφαλείας, Remote Backup (Site-to-Site VPN), CD με DICOM images.
+\end{itemize}
+
+\subsection*{3. Εμπιστευτικότητα (Confidentiality)}
+\begin{itemize}
+    \item \textbf{Κρυπτογράφηση σε αποθήκευση:} $\blacksquare$ Ναι \quad $\square$ Όχι (Πρότυπο AES-256 για τους σκληρούς δίσκους/LUNs του PACS και RIS).
+    \item \textbf{Key management:} Κεντρικό Σύστημα Διαχείρισης Κλειδιών (KMS) σε απομονωμένο δίκτυο.
+    \item \textbf{Πρόσβαση περιορισμένη σε χρήστες:} Μόνο σε αυθεντικοποιημένους ιατρούς και τεχνικούς, με βάση την Πολιτική Ελέγχου Πρόσβασης (RBAC).
+\end{itemize}
+
+\subsection*{4. Ακεραιότητα (Integrity)}
+\begin{itemize}
+    \item \textbf{Hashing / Checksum:} Χρήση αλγορίθμου SHA-256 για την επαλήθευση της ακεραιότητας των αρχείων DICOM και των βάσεων δεδομένων.
+    \item \textbf{Logging αλλαγών αρχείων:} $\blacksquare$ Ναι \quad $\square$ Όχι
+    \item \textbf{Παρακολούθηση μη εξουσιοδοτημένων αλλαγών:} Εφαρμογή File Integrity Monitoring (FIM) στους servers του RIS/PACS και αποστολή ειδοποιήσεων στο κεντρικό SIEM.
+\end{itemize}
+
+\subsection*{5. Διαθεσιμότητα (Availability)}
+\begin{itemize}
+    \item \textbf{Backups:} $\blacksquare$ Ημερήσιο \quad $\blacksquare$ Εβδομαδιαίο \quad $\square$ Άλλο: Ημερήσια incremental, εβδομαδιαία full. Όλα μεταφέρονται στο Remote Backup.
+    \item \textbf{Redundancy:} Συστοιχίες RAID 6 στο PACS και High Availability (HA) Cluster για το RIS. Επιπλέον, υφίσταται Σχέδιο Επιχειρησιακής Συνέχειας (BCP) και Διαχείρισης Περιστατικών (Incident Response) για την εντός 24 ωρών αναφορά περιστατικών κυβερνοασφάλειας στο εθνικό CSIRT βάσει NIS 2.
+    \item \textbf{RTO:} \textless   4 ώρες.
+    \item \textbf{RPO:} \textless 1 ώρα.
+\end{itemize}
+
+\vspace{1cm}
+\hrule
+\vspace{1cm}
+
+\section*{4. ΠΟΛΙΤΙΚΗ ΓΙΑ DATA-IN-TRANSIT ΑΣΦΑΛΕΙΑ}
+\textbf{Έκδοση:} 1.1\\
+\textbf{Ημερομηνία:} 12 Αυγούστου 2026
+
+\subsection*{1. Σκοπός}
+Διασφάλιση ότι όλα τα δεδομένα κατά τη μεταφορά είναι κρυπτογραφημένα και προστατευμένα από μη εξουσιοδοτημένη πρόσβαση, ειδικά κατά την επικοινωνία με εξωτερικούς φορείς (ΗΔΙΚΑ, ΕΟΠΥΥ, Remote Backup) και απομακρυσμένους ιατρούς.
+
+\subsection*{2. Τεχνολογίες Κρυπτογράφησης}
+\begin{itemize}
+    \item \textbf{TLS έκδοση:} TLS 1.2 (ελάχιστο) και TLS 1.3.
+    \item \textbf{VPN:} $\blacksquare$ IPSec (για το Site-to-Site Remote Backup) \quad $\blacksquare$ SSL VPN (για External Physicians) \quad $\square$ WireGuard \quad $\square$ Άλλο
+    \item \textbf{Εσωτερική κρυπτογράφηση υπηρεσιών (service-to-service):} Πρωτόκολλο DICOM over TLS (DICOM Secure) για την επικοινωνία μεταξύ MRI Scanner, MRI Workstation και PACS.
+\end{itemize}
+
+\subsection*{3. Σημεία Μεταφοράς Δεδομένων}
+\begin{itemize}
+    \item \textbf{Εσωτερικό δίκτυο:} Μεταφορά ``DICOM image request'' και ``DICOM image retrieval'' μεταξύ RIS, PACS και Workstations.
+    \item \textbf{Cloud \& Webservices:} Επικοινωνία μέσω Webservices με το Ψηφιακό Αποθετήριο (MyHealth/ΗΔΙΚΑ ΑΕ, ΕΟΠΥΥ).
+    \item \textbf{API/Integrations:} Ανταλλαγή δεδομένων e-prescription (συνταγογράφησης) από τα εθνικά συστήματα προς το RIS.
+    \item \textbf{Remote Backup:} Ασφαλής μεταφορά αντιγράφων ασφαλείας εικόνων DICOM προς την απομακρυσμένη τοποθεσία (Remote Backup) μέσω Site-to-Site VPN.
+\end{itemize}
+
+\subsection*{4. Έλεγχος Ταυτότητας \& Πρόσβασης}
+\begin{itemize}
+    \item \textbf{MFA για απομακρυσμένη πρόσβαση:} $\blacksquare$ Ναι \quad $\square$ Όχι
+    \item \textbf{Certificate-based authentication:} $\blacksquare$ Ναι \quad $\square$ Όχι (Απαιτείται για τη δημιουργία της σήραγγας του Site-to-Site VPN προς το Remote Backup).
+\end{itemize}
+
+\subsection*{5. Παρακολούθηση}
+\begin{itemize}
+    \item \textbf{IDS/IPS:} Εγκατεστημένο στο Next-Generation Firewall (NGFW) του Νοσοκομείου.
+    \item \textbf{TLS inspection:} Εφαρμόζεται στην εξερχόμενη κίνηση περιήγησης, εξαιρουμένης της κίνησης προς υπηρεσίες MyHealth/ΗΔΙΚΑ για λόγους διασφάλισης του ιατρικού απορρήτου.
+\end{itemize}
+
+\vspace{1cm}
+\hrule
+\vspace{1cm}
+
+\section*{5. ΠΟΛΙΤΙΚΗ ΚΑΤΑΤΜΗΣΗΣ ΔΙΚΤΥΟΥ \& ΑΣΦΑΛΟΥΣ ΠΡΟΣΒΑΣΗΣ ΕΦΟΔΙΑΣΤΙΚΗΣ ΑΛΥΣΙΔΑΣ}
+\textbf{Έκδοση:} 1.1\\
+\textbf{Ημερομηνία:} 12 Αυγούστου 2026
+
+\subsection*{1. Σκοπός}
+Ορισμός των μέτρων για δικτυακό διαχωρισμό (πρόληψη lateral movement) και για ασφαλή διασύνδεση τρίτων (προμηθευτών, συνεργατών), προστατεύοντας τα ευαίσθητα ιατρικά μηχανήματα.
+
+\subsection*{2. Κατάτμηση Δικτύου}
+\begin{itemize}
+    \item \textbf{Τμήματα του δικτύου (VLANs / Zones):}
+    \begin{itemize}
+        \item \textit{Medical Devices VLAN:} MRI Scanner \& MRI Workstation.
+        \item \textit{Core Services VLAN:} RIS Server, PACS Server.
+        \item \textit{Users VLAN:} Συστήματα Διοικητικού Προσωπικού, Ιατρών.
+        \item \textit{Guest VLAN:} Ασθενείς (Outpatients).
+    \end{itemize}
+    \item \textbf{DMZ:} Τοποθέτηση των API Gateways που επικοινωνούν με τα εξωτερικά Webservices (MyHealth, E-prescription).
+    \item \textbf{Κανόνες επικοινωνίας μεταξύ δικτυακών ζωνών:} Μοντέλο Default Deny. Επιτρέπεται ρητά και μόνο η απαραίτητη κίνηση (π.χ. πρωτόκολλο DICOM από το Medical VLAN προς το Core Services VLAN).
+\end{itemize}
+
+\subsection*{3. Firewall \& Access Rules}
+\begin{itemize}
+    \item \textbf{Firewall vendor:} Enterprise NGFW.
+    \item \textbf{Policy set:} Εφαρμογή Application Control (ώστε να αναγνωρίζεται η ιατρική κίνηση, π.χ. HL7, DICOM) και Geo-blocking.
+    \item \textbf{Change control διαδικασία:} Κάθε αλλαγή στους κανόνες του Firewall απαιτεί καταγραφή, αξιολόγηση ρίσκου και επίσημη έγκριση από τον ΥΑΣΠΕ.
+\end{itemize}
+
+\subsection*{4. Ασφαλής Πρόσβαση Προμηθευτών}
+\begin{itemize}
+    \item \textbf{Προμηθευτές που χρειάζονται πρόσβαση:} MRI Scanner Vendor Services (τεχνική υποστήριξη και συντήρηση μαγνητικού τομογράφου).
+    \item \textbf{Τύποι πρόσβασης:} Ελεγχόμενη πρόσβαση μέσω Client VPN αποκλειστικά στο δίκτυο των Medical Devices.
+    \item \textbf{Έλεγχοι ασφαλείας:}
+    \begin{itemize}
+        \item \textbf{MFA:} $\blacksquare$ Ναι \quad $\square$ Όχι
+        \item \textbf{Περιορισμός ωραρίου πρόσβασης:} $\blacksquare$ Ναι \quad $\square$ Όχι (Η πρόσβαση παρέχεται με τη λογική Just-in-Time, μόνο κατά τη διάρκεια προγραμματισμένης συντήρησης).
+    \end{itemize}
+    \item \textbf{Monitor logs τρίτων:} Πλήρης καταγραφή της δικτυακής κίνησης του Vendor και Session Recording όταν αποκτά πρόσβαση στο MRI Workstation.
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,135 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[greek, english]{babel}
+\usepackage{alphabeta}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage{pdflscape}
+\definecolor{primary}{RGB}{0, 82, 155}
+\definecolor{tablehead}{RGB}{230, 240, 250}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    filecolor=magenta,      
+    urlcolor=primary,
+}
+
+\title{Vulnerability Analysis Ιστοσελίδων και Web App\\[1ex] \large Google Cybersecurity Seminars}
+\author{Ζωίδης Βασίλειος}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Στόχος 1: 2ο Πειραματικό Λύκειο Θεσσαλονίκης}
+Η πρώτη επιλογή (Δημόσιος Τομέας) αφορά τον ιστότοπο του 2ου Πειραματικού Λυκείου Θεσσαλονίκης (\href{http://2lyk-peir-thess.thess.sch.gr/}{2lyk-peir-thess.thess.sch.gr}). Η επιλογή έγινε από προσωπική περιέργεια για το επίπεδο ασφάλειας της ψηφιακής υποδομής του πρώην σχολείου μου. Η σάρωση αποκάλυψε ενδιαφέροντα ευρήματα, κυρίως λόγω της χρήσης παρωχημένου λογισμικού στον διακομιστή (PHP 7.4.33) και της απουσίας κρυπτογραφημένης επικοινωνίας (HTTP αντί για HTTPS). \hyperref[tab:1]{[Πίνακας 1]}
+
+\section*{Στόχος 2: ΕΥΑΘ}
+Η δεύτερη επιλογή (Δημόσιος Τομέας) αφορά τον κεντρικό ιστότοπο της Εταιρείας Ύδρευσης \& Αποχέτευσης Θεσσαλονίκης (\href{https://www.eyath.gr/}{www.eyath.gr}). Η επιλογή αυτή θεωρείται σημαντική, καθώς αποτελεί κρίσιμη δημόσια υποδομή. Η σάρωση ανέδειξε ευπάθειες που σχετίζονται αποκλειστικά με τη χρήση μιας παρωχημένης έκδοσης της βιβλιοθήκης διεπαφής (Bootstrap 3.3.2), η οποία καθιστά την εφαρμογή ευάλωτη σε πολλαπλές επιθέσεις τύπου Cross-Site Scripting, καθώς και ελλείψεις σε HTTP Security Headers (όπως το Content-Security-Policy).
+\hyperref[tab:2]{[Πίνακας 2]}
+
+\section*{Στόχος 3: Τύπος Χαλκιδικής}
+Η τρίτη επιλογή (Ιδιωτικός Τομέας) αφορά το τοπικό ειδησεογραφικό site \href{https://typoshalkidikis.gr/}{typoshalkidikis.gr}. Η επιλογή αυτή έγινε με σκοπό να εξεταστεί το επίπεδο ασφάλειας ενημερωτικών ιστοσελίδων περιφερειακής εμβέλειας. Η σάρωση αποκάλυψε σημαντικές ευπάθειες λόγω μη ενημερωμένου πυρήνα WordPress (6.9.1), οι οποίες επιτρέπουν κρίσιμες επιθέσεις όπως Remote Code Execution και SQL Injection, καθώς και κακορυθμίσεις διακομιστή όπως η ανοιχτή προβολή καταλόγων (Directory Listing).
+\hyperref[tab:3]{[Πίνακας 3]}
+
+\section*{Στόχος 4: Kosmocar}
+Η τέταρτη και τελευταία επιλογή (Ιδιωτικός Τομέας) αφορά τον εταιρικό ιστότοπο της Kosmocar (\href{https://www.kosmocar.gr/}{www.kosmocar.gr}) που είναι ο επίσημος εισαγωγέας Volkswagen \& Audi στην Ελλάδα. Η επιλογή αυτή έγινε με γνώμονα την ανάλυση μιας μεγάλης, εδραιωμένης επιχείρησης. Η σάρωση αποκάλυψε την ύπαρξη παρωχημένων JavaScript βιβλιοθηκών (Bootstrap 3.3.7 και jQuery 3.3.1), οι οποίες εισάγουν ευπάθειες τύπου Cross-Site Scripting, καθιστώντας δυνητικά εφικτή την εκτέλεση μη έμπιστου κώδικα στον περιηγητή του χρήστη.
+\hyperref[tab:4]{[Πίνακας 4]}
+
+\begin{landscape}
+\begin{table}[ht]
+\caption{\textbf{Ανάλυση Ευπαθειών του \textit{\href{http://2lyk-peir-thess.thess.sch.gr/}{http://2lyk-peir-thess.thess.sch.gr/}}}}
+\label{tab:1}
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+% Προσαρμογή των στηλών για να χωράνε σωστά στο οριζόντιο πλάτος
+\begin{tabularx}{\linewidth}{|c|p{2.2cm}|X|p{2cm}|c|p{2.2cm}|p{2cm}|p{3.5cm}|X|}
+\hline
+\rowcolor{tablehead}
+\textbf{Α/Α} & \textbf{Ευπάθεια} & \textbf{Περιγραφή} & \textbf{Πιθανό Επηρεαζόμενο Σύστημα} & \textbf{CVE ID} & \textbf{CVE ή Exploit-DB ή MISP} & \textbf{MITRE ATT\&CK} & \textbf{MITRE ATT\&CK Technique} & \textbf{Προτεινόμενα Μέτρα Θωράκισης} \\
+\hline
+1 & Command Injection & Ευπάθεια εισαγωγής εντολών που επιτρέπει εκτέλεση κακόβουλων εντολών σε συστήματα Windows (υπό προϋποθέσεις). & PHP (7.4.33 και παλαιότερες) & CVE-2024-3566 & \href{https://www.cve.org/CVERecord?id=CVE-2024-3566}{CVE.org} & Execution & T1059.004 - Command and Scripting Interpreter: Windows Command Shell & Άμεση αναβάθμιση του λογισμικού (PHP) στην τελευταία, υποστηριζόμενη έκδοση. \\
+\hline
+2 & Heap Buffer Overflow & Υπερχείλιση μνήμης όταν η μεταβλητή PHP\_CLI\_SERVER \_WORKERS τεθεί σε πολύ μεγάλη τιμή, οδηγώντας σε κατάρρευση. & PHP (7.4.33 και παλαιότερες) & CVE-2022-4900 & \href{https://www.cve.org/CVERecord?id=CVE-2022-4900}{CVE.org} & Impact & T1499.004 - Endpoint Denial of Service: Application Exploitation & Ενημέρωση (patching) της PHP. Έλεγχος των μεταβλητών περιβάλλοντος του server. \\
+\hline
+3 & Logic Error / Filter Bypass & Λάθος λογικής στη συνάρτηση filter\_var. Επιτρέπει σε επιτιθέμενους να εισάγουν μη έγκυρα URLs με κακόβουλα δεδομένα, παρακάμπτοντας τα φίλτρα. & PHP (7.4.33 και παλαιότερες) & CVE-2024-5458 & \href{https://www.cve.org/CVERecord?id=CVE-2024-5458}{CVE.org} & Defense Evasion & T1562 - Impair Defenses & Ενημέρωση της PHP σε ασφαλή έκδοση. Ενίσχυση των ελέγχων εγκυρότητας (input validation) στην εφαρμογή. \\
+\hline
+4 & Cleartext Transmission & Η επικοινωνία γίνεται μέσω HTTP, μεταδίδοντας δεδομένα χωρίς κρυπτογράφηση. & Web Server / Δίκτυο & N/A (CWE-319) & N/A & Credential Access & T1040 - Network Sniffing & Επαναρύθμιση server για HTTPS. Εγκατάσταση πιστοποιητικού SSL/TLS. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[ht]
+\caption{\textbf{Ανάλυση Ευπαθειών του \textit{\href{https://www.eyath.gr/}{https://www.eyath.gr/}}}}
+\label{tab:2}
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\linewidth}{|c|p{2.2cm}|X|p{2cm}|c|p{2.2cm}|p{2cm}|p{3.5cm}|X|}
+\hline
+\rowcolor{tablehead}
+\textbf{Α/Α} & \textbf{Ευπάθεια} & \textbf{Περιγραφή} & \textbf{Πιθανό Επηρεαζόμενο Σύστημα} & \textbf{CVE ID} & \textbf{CVE ή Exploit-DB ή MISP} & \textbf{MITRE ATT\&CK} & \textbf{MITRE ATT\&CK Technique} & \textbf{Προτεινόμενα Μέτρα Θωράκισης} \\
+\hline
+1 & Cross-Site Scripting (XSS) & Ευπάθεια XSS στο component carousel (data-slide). Ελλιπής καθαρισμός δεδομένων (sanitization) επιτρέπει την εκτέλεση αυθαίρετου κώδικα JS. & Bootstrap 3.3.2 (UI Framework) & CVE-2024-6484 & \href{https://www.cve.org/CVERecord?id=CVE-2024-6484}{CVE.org} & Initial Access & T1190 - Exploit Public-Facing Application & Έλεγχος της εγκατεστημένης έκδοσης και άμεση αναβάθμιση του Bootstrap στην πιο πρόσφατη έκδοση. \\
+\hline
+2 & Cross-Site Scripting (XSS) & Ευπάθεια XSS στο χαρακτηριστικό data-template των εργαλείων tooltip ή popover της βιβλιοθήκης. & Bootstrap 3.3.2 (UI Framework) & CVE-2019-8331 & \href{https://www.cve.org/CVERecord?id=CVE-2019-8331}{CVE.org} & Execution & T1059.007 - Command and Scripting Interpreter: JavaScript & Ενημέρωση του λογισμικού (patching). Εφαρμογή Content-Security-Policy (CSP) στον server. \\
+\hline
+3 & Cross-Site Scripting (XSS) & Ευπάθεια XSS στις ρυθμίσεις affix (target property) του πλαισίου διεπαφής. & Bootstrap 3.3.2 (UI Framework) & CVE-2018-20677 & \href{https://www.cve.org/CVERecord?id=CVE-2018-20677}{CVE.org} & Execution & T1059.007 - Command and Scripting Interpreter: JavaScript & Ενημέρωση βιβλιοθήκης. Ενίσχυση της ασφάλειας σε επίπεδο κώδικα ελέγχου εισόδου. \\
+\hline
+4 & Missing Security Header (CSP) & Ο διακομιστής δεν αποστέλλει την κεφαλίδα Content-Security-Policy, διευκολύνοντας την εκμετάλλευση πιθανών ευπαθειών Cross-Site Scripting (XSS). & Web Server & N/A (CWE-1021) & N/A & Execution & T1059.007 - Command and Scripting Interpreter: JavaScript & Ρύθμιση του web server ώστε να επιστρέφει την κεφαλίδα Content-Security-Policy (CSP) σε κάθε HTTP απάντηση. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[ht]
+\caption{\textbf{Ανάλυση Ευπαθειών του \textit{\href{https://typoshalkidikis.gr/}{https://typoshalkidikis.gr/}}}}
+\label{tab:3}
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\linewidth}{|c|p{2.2cm}|X|p{2cm}|c|p{2.2cm}|p{2cm}|p{3.5cm}|X|}
+\hline
+\rowcolor{tablehead}
+\textbf{Α/Α} & \textbf{Ευπάθεια} & \textbf{Περιγραφή} & \textbf{Πιθανό Επηρεαζόμενο Σύστημα} & \textbf{CVE ID} & \textbf{CVE ή Exploit-DB ή MISP} & \textbf{MITRE ATT\&CK} & \textbf{MITRE ATT\&CK Technique} & \textbf{Προτεινόμενα Μέτρα Θωράκισης} \\
+\hline
+1 & Remote Code Execution (RCE) / SQLi & Ευπάθεια σύγχυσης δρομολόγησης (route confusion) στο REST API που επιτρέπει απομακρυσμένη εκτέλεση κώδικα σε συνδυασμό με SQL Injection. & WordPress Core (6.9.1) & CVE-2026-63030 & \href{https://www.cve.org/CVERecord?id=CVE-2026-63030}{CVE.org} & Execution & T1190 - Exploit Public-Facing Application & Άμεση αναβάθμιση του πυρήνα του WordPress στην έκδοση 7.0.2 ή νεότερη. \\
+\hline
+2 & SQL Injection (SQLi) & Ανεπαρκής καθαρισμός της παραμέτρου author\_not\_in (WP\_Query), που επιτρέπει επιθέσεις SQL Injection μέσω untrusted input. & WordPress Core (6.9.1) & CVE-2026-60137 & \href{https://www.cve.org/CVERecord?id=CVE-2026-60137}{CVE.org} & Credential Access & T1190 - Exploit Public-Facing Application & Ενημέρωση του WordPress. Αυστηρός έλεγχος εισόδου (input validation/sanitization). \\
+\hline
+3 & Cross-Site Scripting (XSS) & Ευπάθεια XSS στο carousel component. Η ελλιπής εξυγίανση επιτρέπει την εκτέλεση αυθαίρετου κώδικα JavaScript μέσω του href attribute. & Bootstrap 4.3.1 (UI Framework) & CVE-2024-6531 & \href{https://www.cve.org/CVERecord?id=CVE-2024-6531}{CVE.org} & Execution & T1059.007 - Command and Scripting Interpreter: JavaScript & Ενημέρωση της βιβλιοθήκης Bootstrap. \\
+\hline
+4 & Directory Listing Enabled & Ο διακομιστής επιτρέπει την προβολή των περιεχομένων καταλόγων (π.χ. wp-content/uploads/), εκθέτοντας δυνητικά ευαίσθητα αρχεία. & Web Server / WordPress Uploads & N/A (CWE-548) & N/A & Discovery & T1083 - File and Directory Discovery & Απενεργοποίηση του directory listing στις ρυθμίσεις του web server (π.χ. μέσω .htaccess ή Nginx). \\
+\hline
+\end{tabularx}
+\end{table}
+
+\begin{table}[ht]
+\caption{\textbf{Ανάλυση Ευπαθειών του \textit{\href{https://www.kosmocar.gr/}{https://www.kosmocar.gr/}}}}
+\label{tab:4}
+\centering
+\small
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\linewidth}{|c|p{2.2cm}|X|p{2cm}|c|p{2.2cm}|p{2cm}|p{3.5cm}|X|}
+\hline
+\rowcolor{tablehead}
+\textbf{Α/Α} & \textbf{Ευπάθεια} & \textbf{Περιγραφή} & \textbf{Πιθανό Επηρεαζόμενο Σύστημα} & \textbf{CVE ID} & \textbf{CVE ή Exploit-DB ή MISP} & \textbf{MITRE ATT\&CK} & \textbf{MITRE ATT\&CK Technique} & \textbf{Προτεινόμενα Μέτρα Θωράκισης} \\
+\hline
+1 & Cross-Site Scripting (XSS) & Ελλιπής εξυγίανση (sanitization) στο carousel component του Bootstrap, επιτρέποντας XSS επιθέσεις μέσω του href attribute μίας \verb|<a>| ετικέτας. & Bootstrap 3.3.7 (UI Framework) & CVE-2024-6484 & \href{https://www.cve.org/CVERecord?id=CVE-2024-6484}{CVE.org} & Execution & T1059.007 - Command and Scripting Interpreter: JavaScript & Αναβάθμιση της βιβλιοθήκης Bootstrap στην τελευταία, ασφαλή έκδοση (π.χ. v5.x). \\
+\hline
+2 & Cross-Site Scripting (XSS) & Πέρασμα HTML περιεχομένου με στοιχεία \verb|<option>| από μη έμπιστες πηγές σε μεθόδους DOM manipulation της jQuery (π.χ. .html()). & jQuery 3.3.1 (JS Library) & CVE-2020-11023 & \href{https://www.cve.org/CVERecord?id=CVE-2020-11023}{CVE.org} & Execution & T1059.007 - Command and Scripting Interpreter: JavaScript & Ενημέρωση (patching) της βιβλιοθήκης jQuery στην έκδοση 3.5.0 ή νεότερη. \\
+\hline
+3 & Cross-Site Scripting (XSS) & Εκτέλεση μη έμπιστου κώδικα κατά τη μεταβίβαση δεδομένων HTML από εξωτερικές πηγές (ακόμα και μετά από sanitization) σε μεθόδους της jQuery. & jQuery 3.3.1 (JS Library) & CVE-2020-11022 & \href{https://www.cve.org/CVERecord?id=CVE-2020-11022}{CVE.org} & Execution & T1059.007 - Command and Scripting Interpreter: JavaScript & Ενημέρωση (patching) της βιβλιοθήκης jQuery στην έκδοση 3.5.0 ή νεότερη. \\
+\hline
+4 & Information Exposure (Fingerprinting) & Έκθεση πληροφοριών σχετικά με το λογισμικό (π.χ. IIS 10.0, Windows Server), διευκολύνοντας την αναζήτηση στοχευμένων exploits. & Web Server (IIS 10.0) & N/A (CWE-200) & N/A & Discovery & T1082 - System Information Discovery & Απόκρυψη των HTTP headers (π.χ. Server, X-Powered-By) που αποκαλύπτουν τεχνολογίες και εκδόσεις. \\
+\hline
+\end{tabularx}
+\end{table}
+
+\end{landscape}
+\end{document}
