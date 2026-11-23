@@ -8,7 +8,7 @@ def generate_client_id(prefix):
 
 broker = "localhost"
 port = 1883
-topic = "iot/temperature"
+topic = "iot/lab/temperature"  # Εξουσιοδοτημένο topic από το ACL
 username = "sub_user"
 password = "SubPass123!"
 client_id = generate_client_id("subscriber")
@@ -18,9 +18,16 @@ print(f"Subscriber ON - Client ID: {client_id}")
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
         print("Connected to MQTT broker successfully")
-        client.subscribe(topic, qos=0)
+        client.subscribe(topic, qos=1)
     else:
         print(f"Connection failed with code {reason_code}")
+
+def on_subscribe(client, userdata, mid, reason_code_list, properties):
+    for rc in reason_code_list:
+        if rc.is_failure:
+            print(f"Subscription DENIED by ACL (reason code: {rc})")
+        else:
+            print(f"Subscription granted with QoS: {rc.value}")
 
 def on_message(client, userdata, msg):
     print(f"Received on {msg.topic}: {msg.payload.decode()}")
@@ -31,6 +38,7 @@ client = mqtt.Client(
 )
 client.username_pw_set(username, password)
 client.on_connect = on_connect
+client.on_subscribe = on_subscribe
 client.on_message = on_message
 client.connect(broker, port)
 client.loop_forever()

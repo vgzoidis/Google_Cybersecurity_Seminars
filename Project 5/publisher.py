@@ -7,7 +7,7 @@ from datetime import datetime, UTC
 
 BROKER = "localhost"
 PORT = 1883
-TOPIC = "iot/temperature"
+TOPIC = "iot/lab/temperature"  # Εξουσιοδοτημένο topic από το ACL
 CLIENT_ID = f"iot-publisher-{uuid.uuid4().hex[:8]}"
 USERNAME = "pub_user"
 PASSWORD = "PubPass123!"
@@ -34,8 +34,8 @@ try:
             "temperature_c": round(random.uniform(20.0, 30.0), 2),
             "timestamp": datetime.now(UTC).isoformat()
         }
-        client.publish(TOPIC, json.dumps(payload))
-        print(f"Published: {payload}")
+        client.publish(TOPIC, json.dumps(payload), qos=1)
+        print(f"Published to {TOPIC}: {payload}")
         time.sleep(5)
 except KeyboardInterrupt:
     print("Stop publisher!")
