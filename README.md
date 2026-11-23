@@ -18,3 +18,9 @@ An assessment of multiple public and private websites, focusing on identifying s
 
 ### Project 3: NIS 2 Compliance Policy
 A cybersecurity policy document aligned with the EU NIS 2 Directive, covering access control, patch management, data protection, network segmentation, and secure operational practices for a hospital radiology department.
+
+### Project 4: NIS 2 Asset Inventory & Risk Assessment
+A workflow-based asset inventory and risk assessment of the same hospital's radiology department, mapping critical risk points, third-party dependencies, and firmware/OS vulnerabilities to technical controls, reporting policies, and EU NIS 2 Directive articles.
+
+### Project 5: MQTT Broker Hardening
+A practical security hardening of an Eclipse Mosquitto MQTT broker, implementing username/password authentication, topic-based Access Control Lists (ACLs), SSL/TLS encryption via OpenSSL certificates, and architectural solutions for high availability and DDoS mitigation.

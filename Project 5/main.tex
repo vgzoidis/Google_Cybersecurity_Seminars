@@ -1,0 +1,572 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage{fontspec}
+\usepackage[greek, bidi=basic, provide=*]{babel}
+\babelprovide[import, onchar=ids fonts]{english}
+\babelfont{rm}{Noto Sans}
+\babelfont[greek]{rm}{Noto Sans}
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{parskip}
+\usepackage{hyperref}
+
+\definecolor{primary}{HTML}{1B365D}
+\definecolor{accent}{HTML}{2B6CB0}
+\definecolor{codebg}{HTML}{F7F9FC}
+\definecolor{codeframe}{HTML}{CBD5E1}
+\definecolor{codecomment}{HTML}{64748B}
+\definecolor{codekeyword}{HTML}{1D4ED8}
+\definecolor{codestring}{HTML}{047857}
+
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{codeframe},
+    breaklines=true,
+    breakatwhitespace=false,
+    showstringspaces=false,
+    tabsize=4,
+    columns=fullflexible,
+    keepspaces=true,
+    xleftmargin=4pt,
+    xrightmargin=4pt,
+    aboveskip=6pt,
+    belowskip=8pt,
+    commentstyle=\color{codecomment}\itshape,
+    keywordstyle=\color{codekeyword}\bfseries,
+    stringstyle=\color{codestring}
+}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=accent,
+    pdftitle={MQTT Broker Hardening Report}
+}
+
+\begin{document}
+
+% --- Τίτλος & Στοιχεία Εργασίας ---
+\begin{center}
+    {\small\bfseries\color{accent} ΑΡΙΣΤΟΤΕΛΕΙΟ ΠΑΝΕΠΙΣΤΗΜΙΟ ΘΕΣΣΑΛΟΝΙΚΗΣ | GOOGLE.ORG CYBERSECURITY SEMINARS}\\[2pt]
+    {\small\color{codecomment} Ζωίδης Βασίλειος - 23 Νοεμβρίου 2026}\\[16pt]
+    \rule{\textwidth}{0.5pt}\\[16pt]
+    {\LARGE\bfseries\color{primary} Θωράκιση Διακομιστή MQTT ενός Συστήματος IoT}
+\end{center}
+\rule{\textwidth}{0.5pt}
+
+\tableofcontents
+\newpage
+
+% ==============================================================================
+\section{Ερώτημα 1 -- Αυθεντικοποίηση Clients με Username / Password}
+% ==============================================================================
+
+\subsection{Βήματα Υλοποίησης}
+Για να αποτρέπεται η ανώνυμη πρόσβαση και να επιτρέπεται η σύνδεση στον Mosquitto broker μόνο σε αυθεντικοποιημένους χρήστες, ακολουθήθηκαν τα παρακάτω βήματα:
+
+\begin{enumerate}
+    \item Άνοιγμα παραθύρου Command Prompt \textbf{ως Διαχειριστής} και μετάβαση στον κατάλογο εγκατάστασης του Mosquitto:
+\begin{lstlisting}[language={}]
+cd "C:\Program Files\mosquitto"
+\end{lstlisting}
+    \item Δημιουργία του αρχείου κωδικών \texttt{passwd} και προσθήκη του χρήστη \texttt{pub\_user} (για τον publisher) με χρήση του εργαλείου \texttt{mosquitto\_passwd.exe}:
+\begin{lstlisting}[language={}]
+mosquitto_passwd -c "C:\Program Files\mosquitto\passwd" pub_user
+\end{lstlisting}
+    \item Προσθήκη του δεύτερου χρήστη \texttt{sub\_user} (για τον subscriber) στο ίδιο αρχείο:
+\begin{lstlisting}[language={}]
+mosquitto_passwd "C:\Program Files\mosquitto\passwd" sub_user
+\end{lstlisting}
+    \item Άνοιγμα του αρχείου \texttt{C:\textbackslash{}Program Files\textbackslash{}mosquitto\textbackslash{}mosquitto.conf} με Notepad ως Διαχειριστής και ορισμός των οδηγιών \texttt{listener 1883}, \texttt{allow\_anonymous false} και \texttt{password\_file}.
+    \item Επανεκκίνηση της υπηρεσίας Mosquitto και επαλήθευση λειτουργίας:
+\begin{lstlisting}[language={}]
+net stop mosquitto
+net start mosquitto
+netstat -ano | findstr :1883
+\end{lstlisting}
+    \item Προσαρμογή των scripts \texttt{publisher.py} και \texttt{subscriber.py} με κλήση της μεθόδου \\ \texttt{client.username\_pw\_set(username, password)} πριν από την κλήση της \\ \texttt{client.connect(...)}.
+\end{enumerate}
+
+\subsection{Αρχείο Παραμετροποίησης \texttt{mosquitto.conf}}
+\begin{lstlisting}[language={}]
+listener 1883
+allow_anonymous false
+password_file C:\Program Files\mosquitto\passwd
+\end{lstlisting}
+
+\subsection{Κώδικας \texttt{publisher.py}}
+\begin{lstlisting}[language=Python]
+import paho.mqtt.client as mqtt
+import json
+import time
+import random
+import uuid
+from datetime import datetime, UTC
+
+BROKER = "localhost"
+PORT = 1883
+TOPIC = "iot/temperature"
+CLIENT_ID = f"iot-publisher-{uuid.uuid4().hex[:8]}"
+USERNAME = "pub_user"
+PASSWORD = "PubPass123!"
+
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
+        print(f"Publisher connected with CLIENT_ID: {CLIENT_ID}")
+    else:
+        print(f"Failed to connect, return code {reason_code}")
+
+client = mqtt.Client(
+    client_id=CLIENT_ID,
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+)
+client.username_pw_set(USERNAME, PASSWORD)
+client.on_connect = on_connect
+client.connect(BROKER, PORT, keepalive=60)
+client.loop_start()
+
+try:
+    while True:
+        payload = {
+            "sensor_id": "temp_sensor",
+            "temperature_c": round(random.uniform(20.0, 30.0), 2),
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+        client.publish(TOPIC, json.dumps(payload))
+        print(f"Published: {payload}")
+        time.sleep(5)
+except KeyboardInterrupt:
+    print("Stop publisher!")
+    client.loop_stop()
+    client.disconnect()
+\end{lstlisting}
+
+\subsection{Κώδικας \texttt{subscriber.py}}
+\begin{lstlisting}[language=Python]
+import paho.mqtt.client as mqtt
+import random
+import string
+
+def generate_client_id(prefix):
+    random_suffix = "".join(
+        random.choices(string.ascii_lowercase + string.digits, k=6)
+    )
+    return f"{prefix}-{random_suffix}"
+
+broker = "localhost"
+port = 1883
+topic = "iot/temperature"
+username = "sub_user"
+password = "SubPass123!"
+client_id = generate_client_id("subscriber")
+
+print(f"Subscriber ON - Client ID: {client_id}")
+
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
+        print("Connected to MQTT broker successfully")
+        client.subscribe(topic, qos=0)
+    else:
+        print(f"Connection failed with code {reason_code}")
+
+def on_message(client, userdata, msg):
+    print(f"Received on {msg.topic}: {msg.payload.decode()}")
+
+client = mqtt.Client(
+    client_id=client_id,
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+)
+client.username_pw_set(username, password)
+client.on_connect = on_connect
+client.on_message = on_message
+client.connect(broker, port)
+client.loop_forever()
+\end{lstlisting}
+
+\subsection{Έλεγχος και Επαλήθευση Λειτουργίας}
+\begin{itemize}
+    \item \textbf{Απόρριψη ανώνυμης σύνδεσης:} Εκτελώντας την εντολή \texttt{mosquitto\_sub -h localhost -t iot/temperature} χωρίς διαπιστευτήρια, ο broker απορρίπτει τη σύνδεση επιστρέφοντας το μήνυμα \texttt{Connection error: Connection Refused: not authorised}.
+    \item \textbf{Επιτυχής αυθεντικοποιημένη επικοινωνία:} Με ταυτόχρονη εκτέλεση \texttt{py subscriber.py} και \texttt{py publisher.py} σε δύο παράθυρα Command Prompt, επιβεβαιώθηκε η επιτυχής σύνδεση και η περιοδική λήψη των JSON μετρήσεων θερμοκρασίας.
+\end{itemize}
+
+% ==============================================================================
+\section{Ερώτημα 2 -- Έλεγχος Πρόσβασης με ACL}
+% ==============================================================================
+
+\subsection{Βήματα Υλοποίησης}
+Σε συνέχεια της αυθεντικοποίησης του Ερωτήματος 1, εφαρμόστηκε μηχανισμός εξουσιοδότησης βάσει της αρχής του ελάχιστου προνομίου (Least Privilege) με λίστες ελέγχου πρόσβασης, ορίζοντας ως εξουσιοδοτημένο topic το \texttt{iot/lab/temperature}:
+
+\begin{enumerate}
+    \item Δημιουργία του αρχείου \texttt{C:\textbackslash{}Program Files\textbackslash{}mosquitto\textbackslash{}acl.conf} με Notepad ως Διαχειριστής. Στον χρήστη \texttt{pub\_user} παραχωρείται αποκλειστικά δικαίωμα εγγραφής (\texttt{write}) στο \texttt{iot/lab/temperature}, ενώ στον χρήστη \texttt{sub\_user} παραχωρείται αποκλειστικά δικαίωμα ανάγνωσης (\texttt{read}) στο ίδιο topic. Οποιοδήποτε άλλο topic απορρίπτεται εξ ορισμού (default deny).
+    \item Ενημέρωση του \texttt{mosquitto.conf} με προσθήκη της οδηγίας \texttt{acl\_file \\ C:\textbackslash{}Program Files\textbackslash{}mosquitto\textbackslash{}acl.conf}, διατηρώντας το \texttt{allow\_anonymous false}.
+    \item Επανεκκίνηση του broker με \texttt{net stop mosquitto} και \texttt{net start mosquitto} και επιβεβαίωση της θύρας με \texttt{netstat -ano | findstr :1883}.
+    \item Προσαρμογή των scripts \texttt{publisher.py} και \texttt{subscriber.py} ώστε να χρησιμοποιούν το whitelisted topic \texttt{iot/lab/temperature} και προσθήκη του callback \texttt{on\_subscribe} στον subscriber για ρητή καταγραφή απόρριψης μη εξουσιοδοτημένων εγγραφών.
+\end{enumerate}
+
+\subsection{Αρχεία Παραμετροποίησης \texttt{acl.conf} και \texttt{mosquitto.conf}}
+
+\textbf{Αρχείο \texttt{C:\textbackslash{}Program Files\textbackslash{}mosquitto\textbackslash{}acl.conf}:}
+\begin{lstlisting}[language={}]
+# Publisher: allowed only to publish (write) to iot/lab/temperature
+user pub_user
+topic write iot/lab/temperature
+
+# Subscriber: allowed only to subscribe (read) to iot/lab/temperature
+user sub_user
+topic read iot/lab/temperature
+\end{lstlisting}
+
+\textbf{Αρχείο \texttt{C:\textbackslash{}Program Files\textbackslash{}mosquitto\textbackslash{}mosquitto.conf}:}
+\begin{lstlisting}[language={}]
+listener 1883
+allow_anonymous false
+password_file C:\Program Files\mosquitto\passwd
+acl_file C:\Program Files\mosquitto\acl.conf
+\end{lstlisting}
+
+\subsection{Κώδικας \texttt{publisher.py}}
+\begin{lstlisting}[language=Python]
+import paho.mqtt.client as mqtt
+import json
+import time
+import random
+import uuid
+from datetime import datetime, UTC
+
+BROKER = "localhost"
+PORT = 1883
+TOPIC = "iot/lab/temperature"  # Whitelisted topic in acl.conf
+CLIENT_ID = f"iot-publisher-{uuid.uuid4().hex[:8]}"
+USERNAME = "pub_user"
+PASSWORD = "PubPass123!"
+
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
+        print(f"Publisher connected with CLIENT_ID: {CLIENT_ID}")
+    else:
+        print(f"Failed to connect, return code {reason_code}")
+
+client = mqtt.Client(
+    client_id=CLIENT_ID,
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+)
+client.username_pw_set(USERNAME, PASSWORD)
+client.on_connect = on_connect
+client.connect(BROKER, PORT, keepalive=60)
+client.loop_start()
+
+try:
+    while True:
+        payload = {
+            "sensor_id": "temp_sensor",
+            "temperature_c": round(random.uniform(20.0, 30.0), 2),
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+        client.publish(TOPIC, json.dumps(payload), qos=1)
+        print(f"Published to {TOPIC}: {payload}")
+        time.sleep(5)
+except KeyboardInterrupt:
+    print("Stop publisher!")
+    client.loop_stop()
+    client.disconnect()
+\end{lstlisting}
+
+\subsection{Κώδικας \texttt{subscriber.py}}
+\begin{lstlisting}[language=Python]
+import paho.mqtt.client as mqtt
+import random
+import string
+
+def generate_client_id(prefix):
+    random_suffix = "".join(
+        random.choices(string.ascii_lowercase + string.digits, k=6)
+    )
+    return f"{prefix}-{random_suffix}"
+
+broker = "localhost"
+port = 1883
+topic = "iot/lab/temperature"  # Whitelisted topic in acl.conf
+username = "sub_user"
+password = "SubPass123!"
+client_id = generate_client_id("subscriber")
+
+print(f"Subscriber ON - Client ID: {client_id}")
+
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
+        print("Connected to MQTT broker successfully")
+        client.subscribe(topic, qos=1)
+    else:
+        print(f"Connection failed with code {reason_code}")
+
+def on_subscribe(client, userdata, mid, reason_code_list, properties):
+    for rc in reason_code_list:
+        if rc.is_failure:
+            print(f"Subscription DENIED by ACL (reason code: {rc})")
+        else:
+            print(f"Subscription granted with QoS: {rc.value}")
+
+def on_message(client, userdata, msg):
+    print(f"Received on {msg.topic}: {msg.payload.decode()}")
+
+client = mqtt.Client(
+    client_id=client_id,
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+)
+client.username_pw_set(username, password)
+client.on_connect = on_connect
+client.on_subscribe = on_subscribe
+client.on_message = on_message
+client.connect(broker, port)
+client.loop_forever()
+\end{lstlisting}
+
+\subsection{Έλεγχος Αποτροπής Πρόσβασης σε Μη Εξουσιοδοτημένα Topics}
+Για να επαληθευτεί ότι το ACL αποτρέπει αποστολή ή λήψη δεδομένων εκτός whitelist, διακόπηκε προσωρινά η υπηρεσία (\texttt{net stop mosquitto}) και εκκινήθηκε ο broker σε κατάσταση αναλυτικής καταγραφής (\texttt{mosquitto.exe -c mosquitto.conf -v}). Πραγματοποιήθηκαν οι ακόλουθες δοκιμές:
+
+\begin{enumerate}
+    \item \textbf{Απόπειρα publish από τον \texttt{pub\_user} σε απαγορευμένο topic (\texttt{iot/unauthorized}):}
+\begin{lstlisting}[language={}]
+mosquitto_pub -h localhost -u pub_user -P PubPass123! -t iot/unauthorized -m "Blocked" -d
+\end{lstlisting}
+    Ο broker απέρριψε το μήνυμα καταγράφοντας \texttt{Denied PUBLISH from ... ('iot/unauthorized')}.
+    \item \textbf{Απόπειρα publish από τον \texttt{sub\_user} στο εξουσιοδοτημένο topic (\texttt{iot/lab/temperature}):}
+\begin{lstlisting}[language={}]
+mosquitto_pub -h localhost -u sub_user -P SubPass123! -t iot/lab/temperature -m "Illegal" -d
+\end{lstlisting}
+    Ο broker απέρριψε το αίτημα (\texttt{Denied PUBLISH}), καθώς ο \texttt{sub\_user} διαθέτει μόνο δικαίωμα \texttt{read}.
+    \item \textbf{Απόπειρα subscribe από τον \texttt{sub\_user} σε μη εξουσιοδοτημένο topic:} Με προσωρινή αλλαγή του \texttt{topic} στο \texttt{subscriber.py} σε \texttt{iot/unauthorized}, το callback \texttt{on\_subscribe} εκτύπωσε απόρριψη από το ACL και ο broker κατέγραψε \texttt{Denied SUBSCRIBE}.
+    \item \textbf{Επιτρεπόμενη επικοινωνία:} Με τα κανονικά αρχεία στο topic \texttt{iot/lab/temperature}, η δημοσίευση και λήψη μηνυμάτων εκτελέστηκε κανονικά.
+\end{enumerate}
+
+% ==============================================================================
+\section{Ερώτημα 3 -- Ασφαλής Επικοινωνία με TLS / Certificates}
+% ==============================================================================
+
+\subsection{Τεχνική Επισκόπηση και Βήματα Υλοποίησης}
+Για την προστασία εμπιστευτικότητας και ακεραιότητας των δεδομένων (αποτροπή υποκλοπής credentials και μετρήσεων αισθητήρων σε επίπεδο δικτύου), ενεργοποιήθηκε κρυπτογραφημένη επικοινωνία SSL/TLS στη θύρα \texttt{8883}. Κατά το TLS handshake αξιοποιείται ασύμμετρη κρυπτογραφία (RSA) μέσω πιστοποιητικών X.509 για την αυθεντικοποίηση του διακομιστή και την ασφαλή διαπραγμάτευση κλειδιών συνόδου, ενώ στη συνέχεια τα μηνύματα MQTT κρυπτογραφούνται με συμμετρική κρυπτογραφία (π.χ. AES-GCM) για υψηλή απόδοση.
+
+Ακολουθήθηκαν τα εξής βήματα υλοποίησης:
+\begin{enumerate}
+    \item \textbf{Δημιουργία καταλόγου πιστοποιητικών:} Σε παράθυρο Command Prompt ως Διαχειριστής:
+\begin{lstlisting}[language={}]
+mkdir "C:\Program Files\mosquitto\certs"
+cd "C:\Program Files\mosquitto\certs"
+\end{lstlisting}
+    \item \textbf{Έκδοση ιδιωτικού κλειδιού και πιστοποιητικού Αρχής Πιστοποίησης (Root CA):} Χρήση του αλγορίθμου \texttt{genrsa} με μέγεθος κλειδιού 2048 bits και Κοινό Όνομα (\texttt{CN=MQTT-Root-CA}), διακριτό από το \texttt{localhost} του broker ώστε να διασφαλίζεται η ορθή επικύρωση της αλυσίδας πιστοποιητικών:
+\begin{lstlisting}[language={}]
+"C:\Program Files\OpenSSL-Win64\bin\openssl.exe" genrsa -out ca.key 2048
+
+"C:\Program Files\OpenSSL-Win64\bin\openssl.exe" req -x509 -new -key ca.key -sha256 -days 365 -out ca.crt -subj "/C=GR/ST=Thessaloniki/L=Thessaloniki/O=AUTH/OU=IoT-Lab/CN=MQTT-Root-CA" -addext "basicConstraints=critical,CA:TRUE" -addext "keyUsage=critical,keyCertSign,cRLSign"
+\end{lstlisting}
+    \item \textbf{Έκδοση κλειδιού και αιτήματος υπογραφής (CSR) του Broker:} Ορισμός \texttt{CN=localhost} ώστε να ταυτίζεται με το hostname του MQTT broker:
+\begin{lstlisting}[language={}]
+"C:\Program Files\OpenSSL-Win64\bin\openssl.exe" genrsa -out server.key 2048
+
+"C:\Program Files\OpenSSL-Win64\bin\openssl.exe" req -new -key server.key -out server.csr -subj "/C=GR/ST=Thessaloniki/L=Thessaloniki/O=AUTH/OU=IoT-Lab/CN=localhost"
+\end{lstlisting}
+    \item \textbf{Υπογραφή του πιστοποιητικού του Broker από την CA με επέκταση SAN:} Προσθήκη του αρχείου επεκτάσεων \texttt{san.ext} (Subject Alternative Name για \texttt{DNS:localhost} και \texttt{IP:127.0.0.1}, όπως απαιτείται από σύγχρονες εκδόσεις OpenSSL 3.x και Python):
+\begin{lstlisting}[language={}]
+echo subjectAltName=DNS:localhost,IP:127.0.0.1> san.ext
+echo basicConstraints=CA:FALSE>> san.ext
+echo keyUsage=digitalSignature,keyEncipherment>> san.ext
+echo extendedKeyUsage=serverAuth>> san.ext
+
+"C:\Program Files\OpenSSL-Win64\bin\openssl.exe" x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256 -extfile san.ext
+\end{lstlisting}
+    \item \textbf{Ενημέρωση \texttt{mosquitto.conf} και επανεκκίνηση:} Μετάβαση σε \texttt{listener 8883} με ορισμό των \texttt{cafile}, \texttt{certfile}, \texttt{keyfile} και \texttt{tls\_version tlsv1.2}, διατηρώντας ενεργούς τους ελέγχους αυθεντικοποίησης και ACL. Επανεκκίνηση της υπηρεσίας και επιβεβαίωση της θύρας TLS:
+\begin{lstlisting}[language={}]
+net stop mosquitto
+net start mosquitto
+netstat -ano | findstr :8883
+\end{lstlisting}
+\end{enumerate}
+
+\subsection{Αρχείο Παραμετροποίησης \texttt{mosquitto.conf}}
+\begin{lstlisting}[language={}]
+listener 8883
+allow_anonymous false
+password_file C:\Program Files\mosquitto\passwd
+acl_file C:\Program Files\mosquitto\acl.conf
+
+cafile C:\Program Files\mosquitto\certs\ca.crt
+certfile C:\Program Files\mosquitto\certs\server.crt
+keyfile C:\Program Files\mosquitto\certs\server.key
+tls_version tlsv1.2
+\end{lstlisting}
+
+\subsection{Κώδικας \texttt{publisher.py}}
+\begin{lstlisting}[language=Python]
+import paho.mqtt.client as mqtt
+import ssl
+import json
+import time
+import random
+import uuid
+from datetime import datetime, UTC
+
+BROKER = "localhost"
+PORT = 8883
+TOPIC = "iot/lab/temperature"
+CLIENT_ID = f"iot-publisher-{uuid.uuid4().hex[:8]}"
+USERNAME = "pub_user"
+PASSWORD = "PubPass123!"
+CA_CERT = r"C:\Program Files\mosquitto\certs\ca.crt"
+
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
+        print(f"Publisher connected securely (TLS) with CLIENT_ID: {CLIENT_ID}")
+    else:
+        print(f"Failed to connect, return code {reason_code}")
+
+client = mqtt.Client(
+    client_id=CLIENT_ID,
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+)
+client.username_pw_set(USERNAME, PASSWORD)
+client.tls_set(ca_certs=CA_CERT, tls_version=ssl.PROTOCOL_TLS_CLIENT)
+client.on_connect = on_connect
+client.connect(BROKER, PORT, keepalive=60)
+client.loop_start()
+
+try:
+    while True:
+        payload = {
+            "sensor_id": "temp_sensor",
+            "temperature_c": round(random.uniform(20.0, 30.0), 2),
+            "timestamp": datetime.now(UTC).isoformat()
+        }
+        client.publish(TOPIC, json.dumps(payload), qos=1)
+        print(f"Published securely to {TOPIC}: {payload}")
+        time.sleep(5)
+except KeyboardInterrupt:
+    print("Stop publisher!")
+    client.loop_stop()
+    client.disconnect()
+\end{lstlisting}
+
+\subsection{Κώδικας \texttt{subscriber.py}}
+\begin{lstlisting}[language=Python]
+import paho.mqtt.client as mqtt
+import ssl
+import random
+import string
+
+def generate_client_id(prefix):
+    random_suffix = "".join(
+        random.choices(string.ascii_lowercase + string.digits, k=6)
+    )
+    return f"{prefix}-{random_suffix}"
+
+broker = "localhost"
+port = 8883
+topic = "iot/lab/temperature"
+username = "sub_user"
+password = "SubPass123!"
+ca_cert = r"C:\Program Files\mosquitto\certs\ca.crt"
+client_id = generate_client_id("subscriber")
+
+print(f"Subscriber ON (TLS) - Client ID: {client_id}")
+
+def on_connect(client, userdata, flags, reason_code, properties):
+    if reason_code == 0:
+        print("Connected to MQTT broker securely (TLS)")
+        client.subscribe(topic, qos=1)
+    else:
+        print(f"Connection failed with code {reason_code}")
+
+def on_subscribe(client, userdata, mid, reason_code_list, properties):
+    for rc in reason_code_list:
+        if rc.is_failure:
+            print(f"Subscription DENIED by ACL (reason code: {rc})")
+        else:
+            print(f"Subscription granted with QoS: {rc.value}")
+
+def on_message(client, userdata, msg):
+    print(f"Received on {msg.topic}: {msg.payload.decode()}")
+
+client = mqtt.Client(
+    client_id=client_id,
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+)
+client.username_pw_set(username, password)
+client.tls_set(ca_certs=ca_cert, tls_version=ssl.PROTOCOL_TLS_CLIENT)
+client.on_connect = on_connect
+client.on_subscribe = on_subscribe
+client.on_message = on_message
+client.connect(broker, port)
+client.loop_forever()
+\end{lstlisting}
+
+\subsection{Έλεγχος και Επαλήθευση TLS}
+\begin{itemize}
+    \item \textbf{Επιτυχής κρυπτογραφημένη επικοινωνία:} Εκτελώντας τα προσαρμοσμένα \texttt{subscriber.py} και \texttt{publisher.py}, επιβεβαιώθηκε η σύνδεση στη θύρα \texttt{8883} με επαλήθευση του πιστοποιητικού \texttt{server.crt} βάσει του \texttt{ca.crt}. Αντίστοιχη επαλήθευση από γραμμή εντολών:
+\begin{lstlisting}[language={}]
+mosquitto_sub -h localhost -p 8883 --cafile "C:\Program Files\mosquitto\certs\ca.crt" -u sub_user -P SubPass123! -t iot/lab/temperature -d
+\end{lstlisting}
+    \item \textbf{Απόρριψη μη κρυπτογραφημένων συνδέσεων:} Οποιαδήποτε απόπειρα σύνδεσης στη θύρα \texttt{1883} (απενεργοποιημένη) ή στη θύρα \texttt{8883} χωρίς έγκυρο TLS handshake απορρίπτεται άμεσα από τον broker.
+\end{itemize}
+
+% ==============================================================================
+\section{Ερώτημα 4 -- Single Point of Failure \& Αντιμετώπιση DDoS}
+% ==============================================================================
+
+Η εγκατάσταση ενός μεμονωμένου MQTT broker σε έναν μόνο διακομιστή καθιστά τον broker \textbf{Single Point of Failure (SPOF)}: μια αστοχία υλικού, ένα σφάλμα λογισμικού, μια προγραμματισμένη συντήρηση ή μια κακόβουλη επίθεση οδηγεί σε καθολική διακοπή της ανταλλαγής τηλεμετρίας σε ολόκληρο το δίκτυο IoT. Επιπλέον, η έκθεση του broker σε δίκτυα τον καθιστά πρωταρχικό στόχο επιθέσεων άρνησης εξυπηρέτησης (DDoS) τόσο σε επίπεδο δικτύου (volumetric/protocol floods) όσο και σε επίπεδο εφαρμογής MQTT (connection/publish floods).
+
+\subsection{Αύξηση Διαθεσιμότητας και Εξάλειψη του SPOF}
+Για την επίτευξη υψηλής διαθεσιμότητας και ανθεκτικότητας, προτείνονται οι ακόλουθες αρχιτεκτονικές και τεχνικές λύσεις:
+
+\begin{enumerate}
+    \item \textbf{Συστοιχία MQTT Brokers (Active-Active / Active-Passive):} Αντί ενός μοναδικού κόμβου, αναπτύσσεται συστοιχία πολλαπλών brokers (π.χ. Mosquitto High Availability, EMQX, HiveMQ ή VerneMQ) κατανεμημένων σε διαφορετικά \textit{Availability Zones}. Οι κόμβοι συγχρονίζουν σε πραγματικό χρόνο τα ενεργά sessions, τις εγγραφές (subscriptions) και τα retained messages, ώστε η απώλεια ενός κόμβου να μην διακόπτει την εξυπηρέτηση των clients.
+    \item \textbf{Κατανομή Φορτίου με Πλεονασμό:} Τοποθέτηση Layer 4 TCP Load Balancer (π.χ. HAProxy, NGINX Stream, Envoy ή Cloud Network Load Balancer) μπροστά από το cluster. Ο Load Balancer εκτελεί συνεχή \textit{Health Checks} και δρομολογεί συνδέσεις μόνο προς υγιείς κόμβους. Για να μην αποτελεί SPOF ο ίδιος ο Load Balancer, υλοποιείται σε ζεύγος Active/Standby με πρωτόκολλο \textbf{VRRP/Keepalived} (Virtual IP) ή μέσω managed cloud υπηρεσίας.
+    \item \textbf{Edge Brokers και MQTT Bridging:} Τοποθέτηση τοπικών (edge) brokers κοντά στους αισθητήρες IoT, οι οποίοι συνδέονται μέσω \textit{MQTT Bridge} με το κεντρικό cluster. Σε περίπτωση διακοπής της σύνδεσης WAN ή πτώσης του κεντρικού broker, ο edge broker αποθηκεύει προσωρινά τα μηνύματα τοπικά και τα συγχρονίζει αυτόματα μόλις αποκατασταθεί η συνδεσιμότητα.
+    \item \textbf{Μόνιμη Αποθήκευση \& Γεωγραφικός Πλεονασμός:} Ενεργοποίηση \texttt{persistence true} σε αναπαραγόμενο (replicated) αποθηκευτικό χώρο ώστε να διατηρούνται μηνύματα QoS 1/2 και retained messages μετά από επανεκκινήσεις, σε συνδυασμό με αρχιτεκτονική \textit{Disaster Recovery (Multi-Region)} και αυτόματο DNS Failover.
+    \item \textbf{Ανθεκτικότητα σε Επίπεδο Client:} Προγραμματισμός των συσκευών IoT με αυτόματη επανασύνδεση χρησιμοποιώντας αλγόριθμο \textbf{Exponential Backoff με Jitter}, ώστε μετά από μια διακοπή να αποφεύγεται το φαινόμενο «thundering herd» (ταυτόχρονη επανασύνδεση χιλιάδων συσκευών που προκαλεί δευτερογενή κατάρρευση), καθώς και υποστήριξη λίστας εναλλακτικών broker endpoints.
+\end{enumerate}
+
+\subsection{Περιορισμός και Μετριασμός Επιθέσεων DDoS}
+Η αποτελεσματική προστασία από DDoS απαιτεί πολυεπίπεδη άμυνα (\textit{Defense-in-Depth}), από τη δικτυακή περίμετρο έως την παραμετροποίηση του ίδιου του MQTT broker, όπως συνοψίζεται στον Πίνακα~\ref{tab:ddos}.
+
+\begin{table}[h]
+\centering
+\caption{Πολυεπίπεδα μέτρα περιορισμού και μετριασμού επιθέσεων DDoS σε υποδομή MQTT.}
+\label{tab:ddos}
+\vspace{4pt}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{3.4cm} >{\raggedright\arraybackslash}p{4.4cm} >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Επίπεδο Άμυνας} & \textbf{Τεχνικός Μηχανισμός} & \textbf{Ρόλος στον Μετριασμό DDoS} \\
+\midrule
+Δικτυακή Περίμετρος (L3/L4) & Cloud DDoS Scrubbing, Anycast routing, SYN Cookies & Απορροφά ογκομετρικές επιθέσεις (SYN/UDP/ACK floods) πριν φτάσουν στον broker. \\
+\addlinespace
+Δικτυακή Απομόνωση & VPN (WireGuard/IPsec), Private VLAN/APN, Firewall (μόνο θύρα \texttt{8883}), IP Whitelisting & Αποκρύπτει τον broker από το δημόσιο Internet, εξαλείφοντας μαζικές σαρώσεις και επιθέσεις botnet. \\
+\addlinespace
+Load Balancer / Reverse Proxy & Connection \& Rate Limiting ανά IP, TLS Termination & Αναχαιτίζει επιθέσεις εξάντλησης TCP/TLS handshakes και περιορίζει τον ρυθμό νέων συνδέσεων ανά πηγή. \\
+\addlinespace
+Επίπεδο MQTT Broker (\texttt{mosquitto.conf}) & Όρια συνδέσεων, ουρών, μεγέθους μηνυμάτων και keepalive & Αποτρέπει εξάντληση RAM/CPU από κακόβουλα μεγάλα payloads, publish floods ή αργές συνδέσεις (Slowloris). \\
+\addlinespace
+Αυθεντικοποίηση \& Εξουσιοδότηση & Αμοιβαίο TLS (mTLS), Username/Password, αυστηρά ACLs & Απορρίπτει άμεσα μη πιστοποιημένους clients και περιορίζει τη ζημιά από παραβιασμένη συσκευή IoT. \\
+\addlinespace
+Ανίχνευση \& Απόκριση & Fail2Ban / IPS, παρακολούθηση \texttt{\$SYS/\#}, Prometheus/Grafana & Αποκλείει δυναμικά διευθύνσεις IP με επαναλαμβανόμενες αποτυχημένες συνδέσεις και ειδοποιεί για ανώμαλες αιχμές κίνησης. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Ενδεικτικές παράμετροι θωράκισης πόρων στο \texttt{mosquitto.conf} κατά επιθέσεων DoS:}
+\begin{lstlisting}[language={}]
+# Resource limits against application-layer DoS
+max_connections 1000
+max_queued_messages 500
+max_inflight_messages 20
+message_size_limit 10240
+max_keepalive 120
+\end{lstlisting}
+
+\end{document}
