@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+import ssl
 import random
 import string
 
@@ -7,17 +8,18 @@ def generate_client_id(prefix):
     return f"{prefix}-{random_suffix}"
 
 broker = "localhost"
-port = 1883
-topic = "iot/lab/temperature"  # Εξουσιοδοτημένο topic από το ACL
+port = 8883
+topic = "iot/lab/temperature"
 username = "sub_user"
 password = "SubPass123!"
+ca_cert = r"C:\Program Files\mosquitto\certs\ca.crt"
 client_id = generate_client_id("subscriber")
 
-print(f"Subscriber ON - Client ID: {client_id}")
+print(f"Subscriber ON (TLS) - Client ID: {client_id}")
 
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
-        print("Connected to MQTT broker successfully")
+        print("Connected to MQTT broker securely (TLS)")
         client.subscribe(topic, qos=1)
     else:
         print(f"Connection failed with code {reason_code}")
@@ -37,6 +39,7 @@ client = mqtt.Client(
     callback_api_version=mqtt.CallbackAPIVersion.VERSION2
 )
 client.username_pw_set(username, password)
+client.tls_set(ca_certs=ca_cert, tls_version=ssl.PROTOCOL_TLS_CLIENT)
 client.on_connect = on_connect
 client.on_subscribe = on_subscribe
 client.on_message = on_message
